@@ -1,0 +1,394 @@
+{% extends "base.html" %}
+{% block extra_css %}
+<style>
+    .nav-tabs {
+        border-bottom: 2px solid rgba(255, 255, 255, 0.1) !important;
+        gap: 10px;
+    }
+
+    .nav-link {
+        color: rgba(255, 255, 255, 0.7) !important;
+        background: rgba(255, 255, 255, 0.05) !important;
+        border: 1px solid rgba(255, 255, 255, 0.1) !important;
+        border-radius: 8px 8px 0 0 !important;
+        transition: all 0.3s ease !important;
+        font-weight: 600 !important;
+        padding: 0.8rem 1.5rem !important;
+    }
+
+    .nav-link:hover {
+        background: rgba(255, 255, 255, 0.1) !important;
+        color: white !important;
+        border-color: var(--hyundai-accent) !important;
+    }
+
+    .nav-link.active {
+        background: var(--hyundai-blue) !important;
+        color: white !important;
+        border-color: var(--hyundai-accent) !important;
+        border-bottom: 2px solid var(--hyundai-accent) !important;
+        box-shadow: 0 0 15px var(--accent-glow) !important;
+    }
+</style>
+{% endblock %}
+{% block content %}
+<div class="row">
+    <div class="col-md-4 mb-4">
+        <form method="POST" enctype="multipart/form-data">
+            {% csrf_token %}
+            <input type="hidden" name="update_profile" value="true">
+            <div class="glass-card text-center">
+                <div class="mb-3 position-relative d-inline-block">
+                    {% if user.profile_image %}
+                    <img src="{{ user.profile_image.url }}" class="rounded-circle border border-primary p-1"
+                        style="width: 120px; height: 120px; object-fit: cover; box-shadow: 0 0 15px var(--accent-glow);">
+                    {% else %}
+                    <div class="rounded-circle bg-primary d-inline-block p-3"
+                        style="width: 120px; height: 120px; display: flex; align-items: center; justify-content: center;">
+                        <i class="fas fa-user fa-3x text-white"></i>
+                    </div>
+                    {% endif %}
+                    <label for="id_profile_image"
+                        class="position-absolute bottom-0 end-0 bg-dark text-white rounded-circle p-2 cursor-pointer"
+                        style="cursor: pointer; border: 1px solid var(--accent-color);">
+                        <i class="fas fa-camera"></i>
+                        <input type="file" name="profile_image" id="id_profile_image" class="d-none">
+                    </label>
+                </div>
+                <h3>{{ user.username }}</h3>
+                <p class="badge bg-primary">{{ user.get_role_display }}</p>
+                <hr class="opacity-10">
+
+
+                <button type="submit" class="btn btn-primary btn-sm w-100">Update Profile Picture</button>
+            </div>
+        </form>
+    </div>
+
+    <div class="col-md-8">
+        {% if user.role == 'ADMIN' %}
+        <!-- Admin Analytics -->
+        <div class="row g-3 mb-4">
+            <div class="col-md-3">
+                <div class="glass-card text-center p-3 border-info">
+                    <h2 class="accent-text mb-0">{{ stats.today_bookings }}</h2>
+                    <small class="text-white-50 x-small">TODAY'S BOOKINGS</small>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="glass-card text-center p-3 border-warning">
+                    <h2 class="text-warning mb-0">{{ stats.pending_requests }}</h2>
+                    <small class="text-white-50 x-small">PENDING REQUESTS</small>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="glass-card text-center p-3 border-danger">
+                    <h2 class="text-danger mb-0">{{ stats.low_stock }}</h2>
+                    <small class="text-white-50 x-small">LOW STOCK ALERTS</small>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="glass-card text-center p-3 border-primary" style="border-color: var(--hyundai-accent) !important;">
+                    <h2 class="accent-text mb-0" style="color: var(--hyundai-accent);">{{ stats.due_reminders }}</h2>
+                    <small class="text-white-50 x-small">SERVICE REMINDERS</small>
+                </div>
+            </div>
+        </div>
+
+        <!-- Admin View with Tabs -->
+        <ul class="nav nav-tabs mb-4 border-secondary" id="adminTabs" role="tablist">
+            <li class="nav-item" role="presentation">
+                <button class="nav-link active" id="appointments-tab" data-bs-toggle="tab"
+                    data-bs-target="#appointments" type="button" role="tab" aria-controls="appointments"
+                    aria-selected="true">Manage Appointments</button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="management-tab" data-bs-toggle="tab" data-bs-target="#management"
+                    type="button" role="tab" aria-controls="management" aria-selected="false">Admin Tools</button>
+            </li>
+        </ul>
+
+        <div class="tab-content" id="adminTabsContent">
+            <!-- Appointments Tab -->
+            <div class="tab-pane fade show active" id="appointments" role="tabpanel" aria-labelledby="appointments-tab">
+                <div class="glass-card mb-4">
+                    <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+                        <h4 class="mb-0">Manage Appointments</h4>
+                        <form method="GET" class="d-flex gap-2" style="max-width: 300px;">
+                            <div class="input-group input-group-sm">
+                                <input type="text" name="q" id="appointmentSearch" value="{{ search_query }}" 
+                                    class="form-control bg-dark text-white border-secondary" 
+                                    placeholder="BHM-..."
+                                    onfocus="if(this.value==='') this.value='BHM-';">
+                                <button type="submit" class="btn btn-info"><i class="fas fa-search"></i></button>
+                                {% if search_query %}
+                                    <a href="{% url 'dashboard' %}" class="btn btn-outline-danger"><i class="fas fa-times"></i></a>
+                                {% endif %}
+                            </div>
+                        </form>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table table-dark table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Customer</th>
+                                    <th>Service</th>
+                                    <th>Date</th>
+                                    <th>Time</th>
+                                    <th>Status</th>
+                                    <th>Notify</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for appt in appointments %}
+                                <tr class="align-middle">
+                                    <td class="fw-bold">{{ appt.user.username }}</td>
+                                    <td>
+                                        <div class="small fw-bold">{{ appt.service_type }}</div>
+                                        <div class="x-small text-white-50">{{ appt.reference_number }}</div>
+                                    </td>
+                                    <td>{{ appt.date|date:"M d, Y" }}</td>
+                                    <td>{{ appt.time }}</td>
+                                    <td>
+                                        <form action="{% url 'update_appointment_status' appt.pk %}" method="POST"
+                                            class="d-flex gap-2 align-items-center">
+                                            {% csrf_token %}
+                                            <select name="status"
+                                                class="form-select form-select-sm bg-dark text-white border-secondary"
+                                                style="width: auto; font-size: 0.75rem;">
+                                                {% for choice in appt.status_choices %}
+                                                <option value="{{ choice.value }}" {% if choice.selected %}selected{% endif %}>
+                                                    {{ choice.label }}
+                                                </option>
+                                                {% endfor %}
+                                            </select>
+                                            <button type="submit" class="btn btn-sm btn-info magnetic-btn">Update</button>
+                                        </form>
+                                    </td>
+                                    <td>
+                                        {% if appt.whatsapp_customer_link %}
+                                        <a href="{{ appt.whatsapp_customer_link }}" target="_blank"
+                                            class="btn btn-sm btn-success" title="Notify Customer via WhatsApp">
+                                            <i class="fab fa-whatsapp"></i>
+                                        </a>
+                                        {% else %}
+                                        <span class="text-muted small">No Phone</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="6" class="text-center py-4">
+                                        {% if search_query %}
+                                            <div class="text-danger mb-2"><i class="fas fa-user-slash fa-2x"></i></div>
+                                            <span class="fw-bold">User not found</span>
+                                            <p class="small text-white-50">No appointment matches reference "{{ search_query }}"</p>
+                                        {% else %}
+                                            No appointments found.
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Management Tab -->
+            <div class="tab-pane fade" id="management" role="tabpanel" aria-labelledby="management-tab">
+                <!-- Announcement Center -->
+                <div class="glass-card mb-4">
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <h4 class="mb-0">Announcement Center</h4>
+                    </div>
+                    <div class="p-4 rounded border border-info bg-dark bg-opacity-50">
+                        <form action="{% url 'update_announcement' %}" method="POST">
+                            {% csrf_token %}
+                            <div class="mb-3">
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <label class="form-label small text-info mb-0">ANNOUNCEMENT TEXT</label>
+                                    <div class="form-check form-switch">
+                                        <input class="form-check-input" type="checkbox" name="is_active" id="isActive"
+                                            {% if announcement.active %}checked{% endif %}>
+                                        <label class="form-check-label text-white small" for="isActive">Active</label>
+                                    </div>
+                                </div>
+                                <textarea name="announcement_text"
+                                    class="form-control bg-dark text-white border-secondary" rows="3"
+                                    required>{% if announcement %}{{ announcement.text }}{% endif %}</textarea>
+                            </div>
+                            <button type="submit" class="btn btn-sm btn-info w-100">Update Announcement</button>
+                        </form>
+                    </div>
+
+                    <!-- History Table inside the same card or below it -->
+                    <div class="mt-4 pt-4 border-top border-secondary">
+                        <h6 class="small text-white-50 mb-3">PAST ANNOUNCEMENTS</h6>
+                        <div class="table-responsive" style="max-height: 200px;">
+                            <table class="table table-dark table-sm x-small mb-0">
+                                <thead>
+                                    <tr>
+                                        <th>Date</th>
+                                        <th>Message</th>
+                                        <th>Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for item in announcement_history %}
+                                    <tr>
+                                        <td class="text-white-50">{{ item.created_at|date:"M d" }}</td>
+                                        <td>{{ item.text|truncatechars:40 }}</td>
+                                        <td>
+                                            {% if item.active %}
+                                                <span class="text-info"><i class="fas fa-check-circle"></i> Active</span>
+                                            {% else %}
+                                                <span class="text-muted">History</span>
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                </div>
+
+                <!-- Parts Management -->
+
+                <!-- Parts Management -->
+                <div class="glass-card">
+                    <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+                        <h4 class="mb-0">Parts Managed by You</h4>
+                        <div class="d-flex gap-2">
+                            <form method="GET" class="d-flex gap-2">
+                                <input type="text" name="part_q" value="{{ part_query }}" 
+                                    class="form-control form-control-sm bg-dark text-white border-secondary" 
+                                    placeholder="Search parts...">
+                                <button type="submit" class="btn btn-sm btn-info"><i class="fas fa-search"></i></button>
+                            </form>
+                            <a href="{% url 'part_create' %}" class="btn btn-primary btn-sm">Add New</a>
+                        </div>
+                    </div>
+                    <div class="list-group list-group-flush">
+                        {% for part in parts_added %}
+                        <div
+                            class="list-group-item bg-transparent border-secondary d-flex justify-content-between align-items-center text-white">
+                            <div>
+                                <h6 class="mb-0">{{ part.name }}</h6>
+                                <small class="text-white-50">Nu. {{ part.price }} | Stock: {{ part.stock }}</small>
+                            </div>
+                            <div>
+                                <a href="{% url 'part_update' part.pk %}"
+                                    class="btn btn-sm btn-info magnetic-btn me-2">Edit</a>
+                                <a href="{% url 'part_delete' part.pk %}"
+                                    class="btn btn-sm btn-outline-danger magnetic-btn">Delete</a>
+                            </div>
+                        </div>
+                        {% empty %}
+                        <p class="text-center text-muted">You haven't added any parts yet.</p>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% else %}
+        <!-- Customer View with Tabs -->
+        <ul class="nav nav-tabs mb-4 border-secondary" id="customerTabs" role="tablist">
+            <li class="nav-item" role="presentation">
+                <button class="nav-link active" id="upcoming-tab" data-bs-toggle="tab"
+                    data-bs-target="#upcoming" type="button" role="tab" aria-controls="upcoming"
+                    aria-selected="true">Upcoming Services</button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="history-tab" data-bs-toggle="tab" data-bs-target="#history"
+                    type="button" role="tab" aria-controls="history" aria-selected="false">Service History</button>
+            </li>
+        </ul>
+
+        <div class="tab-content" id="customerTabsContent">
+            <!-- Upcoming Services -->
+            <div class="tab-pane fade show active" id="upcoming" role="tabpanel" aria-labelledby="upcoming-tab">
+                <div class="glass-card mb-4">
+                    <div class="table-responsive">
+                        <table class="table table-dark table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Service</th>
+                                    <th>Date</th>
+                                    <th>Status</th>
+                                    <th>Action</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for appt in upcoming_appointments %}
+                                <tr>
+                                    <td>{{ appt.service_type }}</td>
+                                    <td>{{ appt.date }}</td>
+                                    <td>
+                                        <span class="status-badge status-{{ appt.status|lower }}">
+                                            {{ appt.get_status_display }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <a href="{{ appt.whatsapp_admin_link }}" target="_blank" class="btn btn-sm btn-success">
+                                            <i class="fab fa-whatsapp"></i> Chat
+                                        </a>
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="4" class="text-center py-4">No upcoming appointments.</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Service History -->
+            <div class="tab-pane fade" id="history" role="tabpanel" aria-labelledby="history-tab">
+                <div class="glass-card mb-4">
+                    <div class="table-responsive">
+                        <table class="table table-dark table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Service</th>
+                                    <th>Date</th>
+                                    <th>Reference</th>
+                                    <th>Next Service</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for appt in past_appointments %}
+                                <tr>
+                                    <td>{{ appt.service_type }}</td>
+                                    <td>{{ appt.date|date:"M d, Y" }}</td>
+                                    <td class="small text-white-50">{{ appt.reference_number }}</td>
+                                    <td>
+                                        {% if appt.next_service_date %}
+                                            <span class="text-info">{{ appt.next_service_date|date:"M d, Y" }}</span>
+                                        {% else %}
+                                            <span class="text-muted">-</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="4" class="text-center py-4">No past records found.</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+    </div>
+</div>
+{% endblock %}

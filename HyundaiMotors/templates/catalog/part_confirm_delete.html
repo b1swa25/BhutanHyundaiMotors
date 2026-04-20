@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-6">
+        <div class="glass-card text-center">
+            <h2 class="mb-4 text-danger">Confirm Delete</h2>
+            <p>Are you sure you want to delete <strong>{{ object.name }}</strong>?</p>
+            <form method="POST">
+                {% csrf_token %}
+                <div class="mt-4">
+                    <button class="btn btn-danger" type="submit">Yes, Delete</button>
+                    <a href="{% url 'part_detail' object.pk %}" class="btn btn-outline-light">Cancel</a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

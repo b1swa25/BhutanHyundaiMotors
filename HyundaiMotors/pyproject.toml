@@ -1,0 +1,16 @@
+[project]
+name = "bhutanhyundaimotors"
+version = "0.1.0"
+description = "Django on Cloudflare Workers"
+dependencies = [
+    "Django==6.0.2",
+    "asgiref==3.11.1",
+    "crispy-bootstrap5==2025.6",
+    "django-crispy-forms==2.5",
+    "pillow==12.1.1",
+    "sqlparse==0.5.5",
+    "whitenoise>=6.6.0"
+]
+
+[tool.uv]
+package = false
